@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results for {{ data.query }} - Founder Verifier</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&family=Caveat&display=swap" rel="stylesheet">
+     <!-- Leaflet CSS -->
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <!-- Link to Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container results-container">
+        <header>
+             <!-- Back link -->
+            <a href="{{ url_for('index') }}" class="back-link">← New Search</a>
+            <h1>Verification Report</h1>
+            <p>Results for: <strong>{{ data.query | e }}</strong></p>
+
+            <!-- Reputation Score Summary -->
+            <div class="summary-section">
+                <h2>Overall Reputation Score</h2>
+                {% set score = data.analysis.reputation_score if data.analysis.reputation_score is not none else 50 %}
+                {% set score_class = 'score-neutral' %}
+                {% if score >= 75 %} {% set score_class = 'score-positive' %}
+                {% elif score <= 40 %} {% set score_class = 'score-negative' %} {% endif %}
+                <div class="reputation-score {{ score_class }}">
+                    {{ score }} / 100
+                    <span> <!-- Score interpretation -->
+                        {% if score_class == 'score-positive' %}Generally Positive Indicators{% endif %}
+                        {% if score_class == 'score-negative' %}Potential Concerns Found{% endif %}
+                        {% if score_class == 'score-neutral' %}Mixed or Neutral Indicators{% endif %}
+                    </span>
+                </div>
+                 <p class="score-note">Score based on web sentiment, penalized for specific failure reports. Ranges 0-100.</p>
+                 <p class="score-note">Overall Sentiment Label (from web search): <strong>{{ data.analysis.sentiment_label | default('NEUTRAL') | upper }}</strong></p>
+             </div>
+        </header>
+
+        <!-- Results Grid -->
+        <div class="results-grid">
+
+            <!-- LinkedIn Card (Simulated) -->
+            <div class="results-card">
+                <h3 class="card-title">LinkedIn Profile (Simulated)</h3>
+                <div class="card-content">
+                    {% if data.linkedin %}
+                        {% if data.linkedin.error and "simulated" not in data.linkedin.error.lower() %}
+                            <p class="error-message">{{ data.linkedin.error }}</p>
+                        {% endif %}
+                        <p><strong>Name:</strong> {{ data.linkedin.name | default('N/A') }}</p>
+                        <p><strong>Headline:</strong> {{ data.linkedin.headline | default('N/A') }}</p>
+                        <p><strong>Location:</strong> {{ data.linkedin.location | default('N/A') }}</p>
+                        {% if data.linkedin.experience %}
+                            <strong>Experience Highlights:</strong>
+                            <ul>
+                                {% for exp in data.linkedin.experience[:2] %}
+                                    <li>{{ exp.title | default ('N/A') }} at {{ exp.company | default ('N/A') }} ({{ exp.duration | default ('N/A') }})</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                         <p><small><em>Note: Using simulated data. Real LinkedIn scraping is unreliable/against ToS.</em></small></p>
+                    {% else %}
+                        <p>No LinkedIn data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Failure & Industry Insights Card (Updated) -->
+            <div class="results-card">
+                 {# Changed Title #}
+                 <h3 class="card-title">Industry & Failure Insights</h3>
+                 <div class="card-content">
+                    {# Check the new key #}
+                    {% if data.failure_industry_insights %}
+                        {# Display Specific Failures First if found #}
+                        {% if data.failure_industry_insights.specific_failure_found and data.failure_industry_insights.failure_details %}
+                             <h4>Specific Failure Details Found (via Failory):</h4>
+                             {% for detail in data.failure_industry_insights.failure_details %}
+                                 <div class="failory-item">
+                                     <strong>
+                                         {% if detail.url %}<a href="{{ detail.url }}" target="_blank" rel="noopener noreferrer">{% endif %}
+                                             {{ detail.title | default('Failory Article') | e }}
+                                         {% if detail.url %}</a>{% endif %}
+                                     </strong>
+                                     {# Show more of the snippet #}
+                                     <p><em>Snippet:</em> {{ detail.snippet | default ('No snippet available.') | truncate(600) | e }}</p>
+                                     {% if detail.potential_reasons %}
+                                         <p><em>Potential Reasons Mentioned:</em> {{ detail.potential_reasons | map('e') | join('; ') }}</p>
+                                     {% endif %}
+                                      {% if detail.potential_advice %}
+                                         <p><em>Potential Advice Mentioned:</em> {{ detail.potential_advice | map('e') | join('; ') }}</p>
+                                     {% endif %}
+                                 </div>
+                             {% endfor %}
+                              <hr style="margin: 15px 0; border-style: dashed; border-color: #eee;"> {# Separator #}
+                        {% endif %}
+
+                        {# Always Display Industry Learnings #}
+                        {% if data.failure_industry_insights.industry_learnings %}
+                             <h4>Industry Insights ({% if data.failure_industry_insights.identified_industry %}{{data.failure_industry_insights.identified_industry}}{% else %}General{% endif %})</h4>
+                             <div class="industry-learnings">
+                                 <strong>{{ data.failure_industry_insights.industry_learnings.title | default ('General Learnings') | e }}</strong>
+                                 {% if data.failure_industry_insights.industry_learnings.content %}
+                                     <ul>
+                                         {% for point in data.failure_industry_insights.industry_learnings.content %}
+                                             <li>{{ point | e }}</li>
+                                         {% endfor %}
+                                     </ul>
+                                 {% endif %}
+                                 {# Add note about source only if specific failures weren't found #}
+                                 {% if not data.failure_industry_insights.specific_failure_found %}
+                                     <p><small><em>Note: No specific failure details found via Failory scraping. Displaying industry insights from internal knowledge base.</em></small></p>
+                                 {% else %}
+                                     <p><small><em>Industry insights from internal knowledge base.</em></small></p>
+                                 {% endif %}
+                             </div>
+                        {% endif %}
+
+                        {# Display Failory scraping error if one occurred #}
+                        {% if data.failure_industry_insights.error %}
+                            <p><small><em>Failory Scraping Note: {{ data.failure_industry_insights.error | e }}</em></small></p>
+                        {% endif %}
+
+                    {% else %}
+                        <p>Could not retrieve Industry or Failure Insight data.</p>
+                    {% endif %}
+                 </div>
+            </div>
+
+             <!-- Web Sentiment Card -->
+            <div class="results-card">
+                <h3 class="card-title">Web Sentiment Snippets</h3>
+                <div class="card-content">
+                    <p>Sentiment analysis of individual snippets from web search:</p>
+                    {% if data.web_sentiment and data.web_sentiment.analyzed_snippets %}
+                        <div class="sticky-notes-area">
+                            {% for item in data.web_sentiment.analyzed_snippets[:6] %}
+                                {% set sentiment_label = item.sentiment.label | default('NEUTRAL') %}
+                                {% set note_color = 'note-grey' %}
+                                {% if sentiment_label == 'POSITIVE' %}{% set note_color = 'note-green' %}{% endif %}
+                                {% if sentiment_label == 'NEGATIVE' %}{% set note_color = 'note-red' %}{% endif %}
+                                <div class="sticky-note {{ note_color }}">
+                                    {# Increased truncation limit #}
+                                    {{ item.text | truncate(300) | e }}
+                                    <small> ({{ sentiment_label }})</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif data.web_sentiment.error %}
+                         <p class="error-message">{{ data.web_sentiment.error | e }}</p>
+                    {% else %}
+                        <p>No relevant web snippets found for sentiment analysis.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Potential Controversies Card (New) -->
+            <div class="results-card">
+                <h3 class="card-title">Potential Controversies & Issues</h3>
+                <div class="card-content">
+                     <p>Snippets from web search matching keywords like "lawsuit", "scandal", "allegations", etc.</p>
+                     <p><strong>Disclaimer:</strong> These are automated findings based on keywords and require further investigation for confirmation and context.</p>
+                    {% if data.controversies and data.controversies.potential_hits %}
+                        <ul>
+                            {% for hit in data.controversies.potential_hits %}
+                                <li>
+                                    <strong>{{ hit.title | default('Untitled') | e }}</strong>:
+                                    {# Show full snippet for controversies #}
+                                    {{ hit.snippet | default('N/A') | e }}
+                                    {# Optional Link #}
+                                    {# {% if hit.url and hit.url != '#' %}<a href="{{ hit.url }}" target="_blank" rel="noopener noreferrer">[Source]</a>{% endif %} #}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% elif data.controversies.error and "No specific" not in data.controversies.error %}
+                         <p class="error-message">Error during controversy search: {{ data.controversies.error | e }}</p>
+                    {% else %}
+                        <p>No snippets matching controversy keywords were found in the preliminary web search.</p>
+                    {% endif %}
+                    {% if data.controversies.search_query %}
+                         <p><small><em>Search Query Used: {{ data.controversies.search_query | e }}</em></small></p>
+                    {% endif %}
+                </div>
+            </div>
+
+
+            <!-- Map Card -->
+            <div class="results-card">
+                <h3 class="card-title">Geographical Mentions</h3>
+                <div class="card-content">
+                    <div id="map"></div>
+                    {% if not data.analysis.locations or data.analysis.locations|length == 0 or data.analysis.locations[0].name == 'Default Location (Unknown)' %}
+                        <p class="map-note">Could not identify specific locations from the text.</p>
+                    {% else %}
+                         <p class="map-note">Map shows potential locations mentioned in aggregated text.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div> <!-- End Results Grid -->
+
+        <footer>
+            <p>© <span id="copyright-year">2024</span> Founder Verifier. All rights reserved. Data presented is for informational purposes only and requires verification.</p>
+        </footer>
+
+    </div> <!-- End Container -->
+
+    <!-- Include Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+    <!-- Map Initialization Script & Other JS -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Map initialization (Keep as before)
+        const rawLocationsData = '{{ data.analysis.locations | default([]) | tojson | safe }}';
+        let locations = [];
+        try { locations = JSON.parse(rawLocationsData); if (!Array.isArray(locations)) locations = []; } catch (e) { console.error("Error parsing locations data:", e); locations = []; }
+        const mapElement = document.getElementById('map');
+        if (mapElement) { /* ... Rest of map logic from previous correct answer ... */
+            let map; const validLocations = locations.filter(loc => loc && typeof loc.lat === 'number' && typeof loc.lon === 'number');
+            console.log("Valid locations for map:", validLocations);
+            if (validLocations.length > 0) {
+                const firstLoc = validLocations[0]; map = L.map('map').setView([firstLoc.lat, firstLoc.lon], 8);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© <a href="http://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors' }).addTo(map);
+                const markers = [];
+                validLocations.forEach(loc => { try { const marker = L.marker([loc.lat, loc.lon]).addTo(map).bindPopup(`<b>${loc.name ? loc.name.replace(/</g, "<").replace(/>/g, ">") : 'Location'}</b>`); markers.push(marker); } catch(markerError){ console.error("Error creating marker for:", loc, markerError); } });
+                if (markers.length > 1) { try { const group = L.featureGroup(markers); map.fitBounds(group.getBounds().pad(0.3)); } catch (boundsError) { console.error("Error fitting map bounds:", boundsError); if(markers.length > 0) map.setView(markers[0].getLatLng(), 8); } }
+                else if (markers.length === 1) { map.setView(markers[0].getLatLng(), 10); }
+            } else { console.log("No valid location data found for map. Displaying default map state."); map = L.map('map').setView([20, 0], 2); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map); mapElement.innerHTML += '<p style="position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.8); padding: 5px; border-radius: 3px; z-index:1000; font-size:0.9em;">No specific locations identified.</p>'; }
+        } else { console.error("Map container element with ID 'map' not found."); }
+
+        // Card animation
+         const cards = document.querySelectorAll('.results-card'); cards.forEach((card, index) => { card.style.opacity = 0; card.style.transform = 'translateY(20px)'; setTimeout(() => { card.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out'; card.style.opacity = 1; card.style.transform = 'translateY(0)'; }, index * 50); });
+
+         // Set Copyright Year
+         const yearSpan = document.getElementById('copyright-year'); if (yearSpan) { yearSpan.textContent = new Date().getFullYear(); }
+    });
+    </script>
+
+</body>
+</html>

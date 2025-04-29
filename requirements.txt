@@ -1,0 +1,9 @@
+# requirements.txt
+Flask>=2.0
+requests>=2.25
+beautifulsoup4>=4.9
+selenium>=4.0
+webdriver-manager>=3.5 # Or specific version
+nltk>=3.6
+Flask-Caching>=2.0 # Or appropriate version
+# Add other direct dependencies if any

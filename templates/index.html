@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder Verifier</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&family=Caveat&display=swap" rel="stylesheet">
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Founder Verifier</h1>
+            <p>Get quick insights on startup founders and their ventures.</p>
+        </header>
+
+        <form action="{{ url_for('search') }}" method="POST" class="search-form">
+            <input type="text" name="query" placeholder="Enter founder or startup name..." required>
+            <button type="submit">Verify</button>
+        </form>
+
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+
+        <footer>
+            <p>© <span id="copyright-year-index">2024</span> Founder Verifier. For informational purposes only.</p>
+        </footer>
+    </div>
+    <script>
+     // Also set year on index page footer
+     document.addEventListener('DOMContentLoaded', function() {
+         const yearSpan = document.getElementById('copyright-year-index');
+         if (yearSpan) {
+             yearSpan.textContent = new Date().getFullYear();
+         }
+     });
+    </script>
+</body>
+</html>
