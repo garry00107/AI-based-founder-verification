@@ -88,13 +88,5 @@ A Flask-based web application that analyzes startup and founder credibility usin
 
 ---
 
-### 🚀 Deployment
 
-- **WSGI Server:** `gunicorn` (optional)  
-  - Suitable for production deployment (unlike Flask’s dev server).
-  - Can be used with Nginx as a reverse proxy.
-
----
-
-## 📁 Project Structure (Simplified)
 
