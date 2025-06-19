@@ -1,13 +1,20 @@
-# In your requirements.txt, make sure you have:
+#requirements.txt
 Flask>=2.0
+requests>=2.25
+beautifulsoup4>=4.9
+selenium>=4.0
+webdriver-manager>=3.5
+nltk>=3.6
+Flask-Caching>=2.0 
+
+pip freeze > requirements.txt
+
 gunicorn
-requests
-beautifulsoup4
+
 lxml
-nltk
-spacy>=3.0.0,<4.0.0 # Pin spaCy to avoid major breaking changes if possible
+
+spacy>=3.0.0,<4.0.0
 geopy
-Flask-Caching
 xhtml2pdf
 python-dotenv # Good for local dev, not used by Render directly for secrets
-# ... other dependencies like Werkzeug if explicitly listed ...
+
