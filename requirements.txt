@@ -7,8 +7,6 @@ webdriver-manager>=3.5
 nltk>=3.6
 Flask-Caching>=2.0 
 
-pip freeze > requirements.txt
-
 gunicorn
 
 lxml
