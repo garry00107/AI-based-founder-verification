@@ -7,3 +7,4 @@ webdriver-manager>=3.5 # Or specific version
 nltk>=3.6
 Flask-Caching>=2.0 # Or appropriate version
 # Add other direct dependencies if any
+pip freeze > requirements.txt
