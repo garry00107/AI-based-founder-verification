@@ -117,13 +117,7 @@
                 <div class="stat-label">Cache Misses</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">
-                    {% if total_searches > 0 %}
-                        {{ "%.1f"|format((cache_hits / total_searches) * 100) }}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                </div>
+                <div class="stat-number">{{ "%.1f"|format(cache_hit_rate) }}%</div>
                 <div class="stat-label">Cache Hit Rate</div>
             </div>
         </div>
