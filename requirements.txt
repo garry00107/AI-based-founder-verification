@@ -1,18 +1,15 @@
-#requirements.txt
 Flask>=2.0
 requests>=2.25
 beautifulsoup4>=4.9
 selenium>=4.0
 webdriver-manager>=3.5
 nltk>=3.6
-Flask-Caching>=2.0 
-
+Flask-Caching>=2.0
 gunicorn
-
 lxml
-
 spacy>=3.0.0,<4.0.0
 geopy
 xhtml2pdf
-python-dotenv # Good for local dev, not used by Render directly for secrets
+python-dotenv
+vaderSentiment
 

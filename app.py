@@ -235,4 +235,6 @@ if __name__ == '__main__':
          except Exception as init_csv_e:
              logging.error(f"Failed to initialize CSV log file {CSV_FILE}: {init_csv_e}")
 
-    app.run(debug=True, host='0.0.0.0', port=5001) # debug=False for production
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    app.run(debug=debug, host='0.0.0.0', port=port)
