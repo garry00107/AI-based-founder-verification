@@ -1,0 +1,8 @@
+{
+  "env": {
+    "FLASK_ENV": "production",
+    "FLASK_SECRET_KEY": "your-secret-key-here-change-this-in-production",
+    "LINKEDIN_EMAIL": "your_linkedin_email@example.com",
+    "LINKEDIN_PASSWORD": "your_linkedin_password"
+  }
+}
