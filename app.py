@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, render_template, request, jsonify, url_for
+from flask import Flask, render_template, request, jsonify, url_for, send_file
 import scraper
 import analyzer
 from cache import init_cache, cache
@@ -37,7 +37,7 @@ CSV_FIELDNAMES = [
 csv_lock = threading.Lock()
 
 def log_search_to_csv(data, cache_status):
-    """Appends search data to the CSV log file."""
+    """Appends search data to the CSV log file. Gracefully handles read-only filesystem."""
     log_entry = {}
     try:
         # Prepare data for logging - handle potential missing keys gracefully
@@ -80,6 +80,12 @@ def log_search_to_csv(data, cache_status):
                 writer.writerow(log_entry)
             logging.info(f"Successfully logged search for '{log_entry['query']}' to {CSV_FILE}")
 
+    except OSError as e:
+        # Handle read-only filesystem gracefully (common in serverless environments)
+        if "Read-only file system" in str(e) or e.errno == 30:
+            logging.info(f"CSV logging skipped for '{data.get('query', 'N/A')}' - read-only filesystem (serverless environment)")
+        else:
+            logging.error(f"File system error writing to CSV log for query '{data.get('query', 'N/A')}': {e}")
     except Exception as e:
         logging.error(f"Error writing to CSV log for query '{data.get('query', 'N/A')}': {e}")
         # Log the problematic entry data for debugging if possible
@@ -92,6 +98,41 @@ def log_search_to_csv(data, cache_status):
 def index():
     """Renders the home page with the search form."""
     return render_template('index.html')
+
+@app.route('/dashboard')
+def dashboard():
+    """Renders a dashboard showing search analytics and CSV data."""
+    try:
+        # Read CSV data
+        csv_data = []
+        if os.path.isfile(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
+            with open(CSV_FILE, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                csv_data = list(reader)
+        
+        # Calculate some basic stats
+        total_searches = len(csv_data)
+        cache_hits = len([row for row in csv_data if row.get('cache_status') == 'HIT'])
+        cache_misses = len([row for row in csv_data if row.get('cache_status') == 'MISS'])
+        
+        # Get recent searches
+        recent_searches = csv_data[-10:] if csv_data else []
+        
+        return render_template('dashboard.html', 
+                             total_searches=total_searches,
+                             cache_hits=cache_hits,
+                             cache_misses=cache_misses,
+                             recent_searches=recent_searches,
+                             csv_data=csv_data)
+    except Exception as e:
+        logging.error(f"Error loading dashboard: {e}")
+        return render_template('dashboard.html', 
+                             total_searches=0,
+                             cache_hits=0,
+                             cache_misses=0,
+                             recent_searches=[],
+                             csv_data=[],
+                             error=str(e))
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -221,6 +262,17 @@ def api_verify():
                            "failure_industry_insights": {"status": "Data not fetched via API"} }
         return jsonify(placeholder_data), 404
 
+@app.route('/download-csv')
+def download_csv():
+    """Downloads the CSV log file."""
+    try:
+        if os.path.isfile(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
+            return send_file(CSV_FILE, as_attachment=True, download_name='founder_verification_log.csv')
+        else:
+            return "No CSV data available", 404
+    except Exception as e:
+        logging.error(f"Error downloading CSV: {e}")
+        return "Error downloading CSV file", 500
 
 # --- Run the App ---
 if __name__ == '__main__':

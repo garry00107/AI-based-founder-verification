@@ -6,23 +6,24 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- VADER Lexicon Download Logic ---
+# Import and run NLTK data downloader
 try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
-except LookupError:
-    logging.info("Downloading VADER lexicon...")
+    from nltk_downloader import ensure_nltk_data
+    ensure_nltk_data()
+except ImportError:
+    # Fallback if nltk_downloader is not available
+    logging.warning("nltk_downloader not found, using fallback download logic")
     try:
-         nltk.download('vader_lexicon')
-         logging.info("VADER lexicon downloaded successfully.")
-    except Exception as download_e:
-         logging.error(f"Failed to download VADER lexicon: {download_e}")
-         logging.error("Sentiment analysis will likely fail. Please try downloading manually:")
-         logging.error(">>> import nltk")
-         logging.error(">>> nltk.download('vader_lexicon')")
-except Exception as e:
-     logging.warning(f"Could not check/download VADER lexicon: {e}. Sentiment analysis might fail.")
-     logging.info("Attempting to proceed anyway...")
-# --- End VADER Download Logic ---
+        nltk.data.find('sentiment/vader_lexicon.zip')
+        logging.info("VADER lexicon already available.")
+    except LookupError:
+        logging.info("Downloading VADER lexicon...")
+        try:
+            nltk.download('vader_lexicon', quiet=True)
+            logging.info("VADER lexicon downloaded successfully.")
+        except Exception as download_e:
+            logging.error(f"Failed to download VADER lexicon: {download_e}")
+            logging.info("Sentiment analysis will use fallback values.")
 
 def analyze_sentiment(text):
     """
@@ -44,6 +45,10 @@ def analyze_sentiment(text):
         else:
             vs['label'] = 'NEUTRAL'
         return vs
+    except LookupError as e:
+        logging.error(f"NLTK data not found during sentiment analysis: {e}")
+        # Return neutral sentiment when NLTK data is missing
+        return {'neg': 0.0, 'neu': 1.0, 'pos': 0.0, 'compound': 0.0, 'label': 'NEUTRAL'}
     except Exception as e:
         logging.error(f"Error during sentiment analysis: {e}")
         # Return neutral sentiment in case of error
